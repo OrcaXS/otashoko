@@ -1,8 +1,0 @@
-/build/
-/config/
-/dist/
-/node_modules/
-{{#unit}}
-/test/unit/coverage/
-{{/unit}}
-html
