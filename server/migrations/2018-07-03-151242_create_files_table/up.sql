@@ -1,5 +1,5 @@
 CREATE TABLE files (
-	file_id integer PRIMARY KEY AUTOINCREMENT,
+	file_id integer NOT NULL PRIMARY KEY AUTOINCREMENT,
 	file_type_id integer,
 	file_path text,
 	file_size integer,

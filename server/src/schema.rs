@@ -1,13 +1,13 @@
 table! {
     file_types (file_type_id) {
-        file_type_id -> Nullable<Integer>,
+        file_type_id -> Integer,
         file_type_name -> Text,
     }
 }
 
 table! {
     files (file_id) {
-        file_id -> Nullable<Integer>,
+        file_id -> Integer,
         file_type_id -> Nullable<Integer>,
         file_path -> Nullable<Text>,
         file_size -> Nullable<Integer>,
@@ -23,26 +23,26 @@ table! {
 
 table! {
     media_types (media_type_id) {
-        media_type_id -> Nullable<Integer>,
+        media_type_id -> Integer,
         media_type_name -> Text,
     }
 }
 
 table! {
     medium (media_id) {
-        media_id -> Nullable<Integer>,
+        media_id -> Integer,
         name -> Text,
         media_type_id -> Integer,
         add_date -> Timestamp,
         last_open_date -> Nullable<Timestamp>,
         file_id -> Integer,
-        media_meta -> Nullable<Binary>,
+        media_meta -> Nullable<Text>,
     }
 }
 
 table! {
     tags (tag_id) {
-        tag_id -> Nullable<Integer>,
+        tag_id -> Integer,
         tag_name -> Nullable<Text>,
     }
 }
