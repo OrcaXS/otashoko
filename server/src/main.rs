@@ -50,7 +50,7 @@ fn test() -> Json<Value> {
 
 
 fn rocket() -> rocket::Rocket {
-    let (allowed_origins, failed_origins) = AllowedOrigins::some(&["http://localhost"]);
+    let (_allowed_origins, failed_origins) = AllowedOrigins::some(&["http://localhost"]);
     assert!(failed_origins.is_empty());
 
     let options = rocket_cors::Cors {
