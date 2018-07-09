@@ -2,4 +2,4 @@
 **/*.rs.bk
 
 files/extracted
-
+db/*
