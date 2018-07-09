@@ -3,12 +3,12 @@ extern crate diesel;
 extern crate dotenv;
 extern crate chrono;
 
-
 pub mod schema;
 pub mod models;
 
-use self::models::{Media};
+use self::models::{Book, NewBook};
 use diesel::prelude::*;
+use diesel::dsl;
 use dotenv::dotenv;
 use std::env;
 
@@ -20,16 +20,23 @@ pub fn establish_connection() -> SqliteConnection {
         .expect(&format!("Error connecting to {}", database_url))
 }
 
-// pub fn create_post(conn: &SqliteConnection, title: &str, body: &str) -> usize {
-//     use schema::posts;
-// 
-//     let new_post = NewPost {
-//         title: title,
-//         body: body,
-//     };
-// 
-//     diesel::insert_into(posts::table)
-//         .values(&new_post)
-//         .execute(conn)
-//         .expect("Error saving new post")
-// }
+pub fn add_book(
+    conn: &SqliteConnection, 
+    name: &str,
+    book_type_id: &i32,
+    file_id: &i32,
+) -> usize {
+    use schema::books;
+    
+    let new_book = NewBook {
+        name: name,
+        book_type_id: book_type_id,
+        add_date: &dsl::now,
+        file_id: file_id,
+    };
+
+    diesel::insert_into(books::table)
+        .values(&new_book)
+        .execute(conn)
+        .expect("Error saving new book")
+}

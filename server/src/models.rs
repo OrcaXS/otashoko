@@ -1,21 +1,24 @@
-use super::schema::medium;
+use super::schema::books;
 use chrono::prelude::*;
 use chrono;
+use diesel::dsl;
 
 #[derive(Queryable)]
-pub struct Media {
-    pub media_id: i32,
+pub struct Book {
+    pub book_id: i32,
     pub name: String,
-    pub media_type_id: i32,
+    pub book_type_id: i32,
     pub add_date: chrono::NaiveDateTime,
     pub last_open_date: Option<chrono::NaiveDateTime>, 
     pub file_id: i32,
-    pub media_meta: Option<String>,
+    pub book_meta: Option<String>,
 }
 
-// #[derive(Insertable)]
-// #[table_name = "medium"]
-// pub struct NewMedia<'a> {
-//     pub title: &'a str,
-//     pub body: &'a str,
-// }
+#[derive(Insertable)]
+#[table_name = "books"]
+pub struct NewBook<'a> {
+    pub name: &'a str,
+    pub book_type_id: &'a i32,
+    pub add_date: &'a dsl::now,
+    pub file_id: &'a i32,
+}
