@@ -1,61 +1,58 @@
-table! {
-    book_tag_maps (book_id, tag_id) {
-        book_id -> Integer,
-        tag_id -> Integer,
-    }
+use juniper::FieldResult;
+use juniper::RootNode;
+
+#[derive(GraphQLEnum)]
+enum Episode {
+    NewHope,
+    Empire,
+    Jedi,
 }
 
-table! {
-    book_types (book_type_id) {
-        book_type_id -> Integer,
-        book_type_name -> Text,
-    }
+#[derive(GraphQLObject)]
+#[graphql(description = "A humanoid creature in the Star Wars universe")]
+struct Human {
+    id: String,
+    name: String,
+    appears_in: Vec<Episode>,
+    home_planet: String,
 }
 
-table! {
-    books (book_id) {
-        book_id -> Integer,
-        name -> Text,
-        book_type_id -> Integer,
-        add_date -> Timestamp,
-        last_open_date -> Nullable<Timestamp>,
-        file_id -> Integer,
-        book_meta -> Nullable<Text>,
-    }
+#[derive(GraphQLInputObject)]
+#[graphql(description = "A humanoid creature in the Star Wars universe")]
+struct NewHuman {
+    name: String,
+    appears_in: Vec<Episode>,
+    home_planet: String,
 }
 
-table! {
-    file_types (file_type_id) {
-        file_type_id -> Integer,
-        file_type_name -> Text,
+pub struct QueryRoot;
+
+graphql_object!(QueryRoot: () |&self| {
+    field human(&executor, id: String) -> FieldResult<Human> {
+        Ok(Human{
+            id: "1234".to_owned(),
+            name: "Luke".to_owned(),
+            appears_in: vec![Episode::NewHope],
+            home_planet: "Mars".to_owned(),
+        })
     }
-}
+});
 
-table! {
-    files (file_id) {
-        file_id -> Integer,
-        file_type_id -> Nullable<Integer>,
-        file_path -> Nullable<Text>,
-        file_size -> Nullable<Integer>,
+pub struct MutationRoot;
+
+graphql_object!(MutationRoot: () |&self| {
+    field createHuman(&executor, new_human: NewHuman) -> FieldResult<Human> {
+        Ok(Human{
+            id: "1234".to_owned(),
+            name: new_human.name,
+            appears_in: new_human.appears_in,
+            home_planet: new_human.home_planet,
+        })
     }
+});
+
+pub type Schema = RootNode<'static, QueryRoot, MutationRoot>;
+
+pub fn create_schema() -> Schema {
+    Schema::new(QueryRoot {}, MutationRoot {})
 }
-
-table! {
-    tags (tag_id) {
-        tag_id -> Integer,
-        tag_name -> Nullable<Text>,
-    }
-}
-
-joinable!(book_tag_maps -> tags (tag_id));
-joinable!(books -> book_types (book_type_id));
-joinable!(files -> file_types (file_type_id));
-
-allow_tables_to_appear_in_same_query!(
-    book_tag_maps,
-    book_types,
-    books,
-    file_types,
-    files,
-    tags,
-);
