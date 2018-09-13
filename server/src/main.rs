@@ -7,14 +7,24 @@ extern crate serde_json;
 extern crate serde_derive;
 #[macro_use]
 extern crate juniper;
-extern crate r2d2;
-extern crate r2d2_sqlite;
-extern crate rusqlite;
+// extern crate r2d2;
+// extern crate r2d2_sqlite;
+// extern crate rusqlite;
 extern crate actix;
 extern crate actix_web;
 extern crate env_logger;
 extern crate futures;
 extern crate uuid;
+#[macro_use]
+extern crate lazy_static;
+extern crate chrono;
+
+#[macro_use]
+extern crate diesel;
+#[macro_use]
+extern crate failure;
+// #[macro_use]
+// extern crate failure_derive;
 
 use actix::prelude::*;
 use actix_web::{
@@ -24,18 +34,35 @@ use actix_web::{
 use futures::future::Future;
 use juniper::http::graphiql::graphiql_source;
 use juniper::http::GraphQLRequest;
-use r2d2_sqlite::SqliteConnectionManager;
+// use r2d2_sqlite::SqliteConnectionManager;
 
-mod db;
-use db::{CreateUser, DbExecutor};
+// use diesel::sqlite::SqliteConnection;
+// use diesel::r2d2;
+
+// mod db;
+// use db::{CreateUser, DbExecutor};
+
+use diesel::prelude::*;
+use diesel::r2d2;
+use diesel::r2d2::ConnectionManager;
 
 mod schema;
+mod gqlschema;
 
-use schema::create_schema;
-use schema::Schema;
+use gqlschema::create_schema;
+use gqlschema::Schema;
+
+mod database;
+mod dbqueries;
+mod models;
+
+mod errors;
+
+type Pool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
 
 struct AppState {
     executor: Addr<GraphQLExecutor>,
+    // db: Addr<DbExecutor>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -46,12 +73,12 @@ impl Message for GraphQLData {
 }
 
 pub struct GraphQLExecutor {
-    schema: std::sync::Arc<Schema>,
+    gqlschema: std::sync::Arc<Schema>,
 }
 
 impl GraphQLExecutor {
-    fn new(schema: std::sync::Arc<Schema>) -> GraphQLExecutor {
-        GraphQLExecutor { schema: schema }
+    fn new(gqlschema: std::sync::Arc<Schema>) -> GraphQLExecutor {
+        GraphQLExecutor { gqlschema }
     }
 }
 
@@ -63,7 +90,9 @@ impl Handler<GraphQLData> for GraphQLExecutor {
     type Result = Result<String, Error>;
 
     fn handle(&mut self, msg: GraphQLData, _: &mut Self::Context) -> Self::Result {
-        let res = msg.0.execute(&self.schema, &());
+        let manager = ConnectionManager::<SqliteConnection>::new("db/otashoko.db");
+        let pool = r2d2::Pool::new(manager).unwrap();
+        let res = msg.0.execute(&self.gqlschema, &pool);
         let res_text = serde_json::to_string(&res)?;
         Ok(res_text)
     }
@@ -91,17 +120,25 @@ fn graphql(
         .responder()
 }
 
+// fn context_factory(_: &mut Request) -> gqlschema::Context {
+//     gqlschema::Context {
+//         connection: database::connection(),
+//     }
+// }
+
+
 fn main() {
     ::std::env::set_var("RUST_LOG", "actix_web=info");
     env_logger::init();
     let sys = actix::System::new("juniper-example");
-    
+
     // r2d2 pool
-    let manager = SqliteConnectionManager::file("test.db");
-    let pool = r2d2::Pool::new(manager).unwrap();
+    // let manager = ConnectionManager::<SqliteConnection>::new("db/otashoko.db");
+    // let pool = r2d2::Pool::new(manager).unwrap();
 
     let schema = std::sync::Arc::new(create_schema());
     let addr = SyncArbiter::start(3, move || GraphQLExecutor::new(schema.clone()));
+    // let db_addr = SyncArbiter::start(3, move || DbExecutor(pool.clone()));
 
     // Start http server
     server::new(move || {

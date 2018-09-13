@@ -1,8 +1,9 @@
 //! Db executor actor
+use diesel::r2d2::Pool;
 use actix::prelude::*;
 use actix_web::*;
-use r2d2::Pool;
-use r2d2_sqlite::SqliteConnectionManager;
+// use r2d2::Pool;
+// use r2d2_sqlite::SqliteConnectionManager;
 use std::io;
 use uuid;
 

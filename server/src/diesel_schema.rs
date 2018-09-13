@@ -1,6 +1,6 @@
 table! {
     book_tag_maps (book_id, tag_id) {
-        book_id -> Text,
+        book_id -> Integer,
         tag_id -> Integer,
     }
 }
@@ -14,12 +14,12 @@ table! {
 
 table! {
     books (book_id) {
-        book_id -> Text,
+        book_id -> Integer,
         name -> Text,
         book_type_id -> Integer,
         add_date -> Timestamp,
         last_open_date -> Nullable<Timestamp>,
-        file_id -> Text,
+        file_id -> Integer,
         book_meta -> Nullable<Text>,
     }
 }
@@ -33,7 +33,7 @@ table! {
 
 table! {
     files (file_id) {
-        file_id -> Text,
+        file_id -> Integer,
         file_type_id -> Nullable<Integer>,
         file_path -> Nullable<Text>,
         file_size -> Nullable<Integer>,
