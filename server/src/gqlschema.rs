@@ -4,6 +4,7 @@ use diesel::r2d2::ConnectionManager;
 use juniper::{Context as JuniperContext, FieldResult, RootNode};
 use models::{Book as dBook, NewBook as dNewBook};
 
+use super::Database;
 use database;
 
 #[derive(GraphQLEnum)]
@@ -41,12 +42,6 @@ struct NewHuman {
 
 type Pool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
 
-pub struct Context {
-    pub connection: Pool,
-}
-
-impl JuniperContext for Context {}
-
 pub struct QueryRoot;
 
 // graphql_object!(QueryRoot: Context |&self| {
@@ -65,23 +60,23 @@ pub struct QueryRoot;
 //     }
 // });
 
-graphql_object!(QueryRoot: Context |&self| {
+graphql_object!(QueryRoot: Database |&self| {
     field apiVersion() -> &str {
         "1.0"
     }
 
-    field bookList(&executor) -> FieldResult<Book> {
-        use ::schema::books::dsl::*;
-        let context = executor.context();
-        let conn = context.connect();
-        let bookList = books.load::<dBook>(&conn)?;
-        Ok(bookList)
-    }
+    // field bookList(&executor) -> FieldResult<Book> {
+    //     use ::schema::books::dsl::*;
+    //     let context = executor.context();
+    //     let conn = context.connect();
+    //     let bookList = books.load::<dBook>(&conn)?;
+    //     Ok(bookList)
+    // }
 });
 
 pub struct MutationRoot;
 
-graphql_object!(MutationRoot: () |&self| {
+graphql_object!(MutationRoot: Database |&self| {
     field createHuman(&executor, new_human: NewHuman) -> FieldResult<Human> {
         Ok(Human{
             id: "1234".to_owned(),

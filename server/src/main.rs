@@ -78,7 +78,7 @@ pub struct GraphQLExecutor {
 
 impl GraphQLExecutor {
     fn new(gqlschema: std::sync::Arc<Schema>) -> GraphQLExecutor {
-        GraphQLExecutor { gqlschema }
+        GraphQLExecutor { gqlschema: gqlschema }
     }
 }
 
@@ -86,13 +86,22 @@ impl Actor for GraphQLExecutor {
     type Context = SyncContext<Self>;
 }
 
+pub struct Database {
+    pub connection: Pool,
+}
+
+impl juniper::Context for Database {}
+
 impl Handler<GraphQLData> for GraphQLExecutor {
     type Result = Result<String, Error>;
 
     fn handle(&mut self, msg: GraphQLData, _: &mut Self::Context) -> Self::Result {
-        let manager = ConnectionManager::<SqliteConnection>::new("db/otashoko.db");
-        let pool = r2d2::Pool::new(manager).unwrap();
-        let res = msg.0.execute(&self.gqlschema, &pool);
+
+        let pool = database::connection();
+        let ctx = Database {
+            connection: pool,
+        };
+        let res = msg.0.execute(&self.gqlschema, &ctx);
         let res_text = serde_json::to_string(&res)?;
         Ok(res_text)
     }
