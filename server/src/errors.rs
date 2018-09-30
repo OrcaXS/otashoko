@@ -43,6 +43,8 @@ pub enum DataError {
     // TLSError(#[cause] native_tls::Error),
     #[fail(display = "IO Error: {}", _0)]
     IOError(#[cause] io::Error),
+    // #[fail(display = "GraphQL Error: {}", _0)]
+    // GraphQLError(#[cause] io::Error),
     #[fail(display = "Error: {}", _0)]
     Bail(String),
     // #[fail(display = "{}", _0)]
@@ -93,3 +95,4 @@ impl From<String> for DataError {
         DataError::Bail(err)
     }
 }
+
