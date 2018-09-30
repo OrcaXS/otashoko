@@ -3,7 +3,8 @@ use chrono::prelude::*;
 use chrono;
 use diesel::dsl;
 
-#[derive(Queryable)]
+#[derive(Queryable, Identifiable)]
+#[primary_key(book_id)]
 pub struct Book {
     pub book_id: String,
     pub name: String,
@@ -17,6 +18,7 @@ pub struct Book {
 #[derive(Insertable)]
 #[table_name = "books"]
 pub struct NewBook<'a> {
+    pub book_id: &'a String,
     pub name: &'a str,
     pub book_type_id: &'a i32,
     pub add_date: &'a dsl::now,
