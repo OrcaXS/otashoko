@@ -25,7 +25,7 @@ extern crate diesel;
 extern crate failure;
 // #[macro_use]
 // extern crate failure_derive;
-
+use std::sync::Arc;
 use actix::prelude::*;
 use actix_web::{
     http, middleware, server, App, AsyncResponder, Error, FutureResponse, HttpRequest,
@@ -42,23 +42,20 @@ use juniper::http::GraphQLRequest;
 // mod db;
 // use db::{CreateUser, DbExecutor};
 
-use diesel::prelude::*;
-use diesel::r2d2;
-use diesel::r2d2::ConnectionManager;
-
 mod schema;
 mod gqlschema;
 
 use gqlschema::create_schema;
 use gqlschema::Schema;
 
-mod database;
+mod dbpool;
 mod dbqueries;
+
+use dbqueries::Db;
+
 mod models;
 
 mod errors;
-
-type Pool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
 
 struct AppState {
     executor: Addr<GraphQLExecutor>,
@@ -87,7 +84,8 @@ impl Actor for GraphQLExecutor {
 }
 
 pub struct Database {
-    pub connection: Pool,
+    // pub connection: Pool,
+    pub db: Arc<Db>,
 }
 
 impl juniper::Context for Database {}
@@ -97,9 +95,8 @@ impl Handler<GraphQLData> for GraphQLExecutor {
 
     fn handle(&mut self, msg: GraphQLData, _: &mut Self::Context) -> Self::Result {
 
-        let pool = database::connection();
         let ctx = Database {
-            connection: pool,
+            db: Arc::new(Db::new()),
         };
         let res = msg.0.execute(&self.gqlschema, &ctx);
         let res_text = serde_json::to_string(&res)?;
