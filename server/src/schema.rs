@@ -34,7 +34,7 @@ table! {
 table! {
     files (file_id) {
         file_id -> Text,
-        file_type_id -> Nullable<Integer>,
+        file_type_id -> Integer,
         file_path -> Nullable<Text>,
         file_size -> Nullable<Integer>,
     }
