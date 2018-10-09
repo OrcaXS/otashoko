@@ -55,6 +55,13 @@ impl Db {
         Ok(results)
     }
 
+    pub fn get_book_type(&self, id: i32) -> Result<BookType, DataError> {
+        let db = &self.pool;
+        let conn = db.get()?;
+        let result = schema::book_types::table.find(id).first::<BookType>(&conn)?;
+        Ok(result)
+    }
+
     pub fn get_book_types(&self) -> Result<Vec<BookType>, DataError> {
         use schema::book_types::dsl::*;
         let db = &self.pool;
@@ -63,7 +70,30 @@ impl Db {
         let results = book_types
             .load::<BookType>(&conn)?;
         Ok(results)
+    }
 
+    pub fn get_file(&self, id: Uuid) -> Result<File, DataError> {
+        let db = &self.pool;
+        let conn = db.get()?;
+        let result = schema::files::table.find(id.to_string()).first::<File>(&conn)?;
+        Ok(result)
+    }
+
+    pub fn get_file_type(&self, id: i32) -> Result<FileType, DataError> {
+        let db = &self.pool;
+        let conn = db.get()?;
+        let result = schema::file_types::table.find(id).first::<FileType>(&conn)?;
+        Ok(result)
+    }
+
+    pub fn get_file_types(&self) -> Result<Vec<FileType>, DataError> {
+        use schema::file_types::dsl::*;
+        let db = &self.pool;
+        let conn = db.get()?;
+
+        let results = file_types
+            .load::<FileType>(&conn)?;
+        Ok(results)
     }
 
     pub fn add_book(&self, new_book: NewBook, book_uuid: Uuid) -> Result<Book, DataError> {
@@ -92,4 +122,29 @@ impl Db {
         Ok(result)
     }
 
+    pub fn add_file(&self, new_file: NewFile, file_uuid: Uuid) -> Result<File, DataError> {
+        // use schema::books::dsl::*;
+        let db = &self.pool;
+        let conn = db.get()?;
+
+        let rows =  diesel::insert_into(schema::files::table)
+        .values(&new_file)
+        .execute(&conn)?;
+        validate_rows(rows, 1)?;
+        let result = schema::files::table.find(file_uuid.to_string()).first::<File>(&conn)?;
+        Ok(result)
+    }
+
+    pub fn add_file_type(&self, new_file_type: NewFileType) -> Result<FileType, DataError> {
+        use schema::file_types::dsl::*;
+        let db = &self.pool;
+        let conn = db.get()?;
+
+        let rows =  diesel::insert_into(schema::file_types::table)
+        .values(&new_file_type)
+        .execute(&conn)?;
+        validate_rows(rows, 1)?;
+        let result = schema::file_types::table.order(file_type_id.desc()).first::<FileType>(&conn)?;
+        Ok(result)
+    }
 }

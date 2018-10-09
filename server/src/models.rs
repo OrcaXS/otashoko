@@ -5,6 +5,7 @@ use diesel::dsl;
 
 #[derive(Queryable, Identifiable, PartialEq, Associations)]
 #[belongs_to(BookType, foreign_key = "book_type_id")]
+#[belongs_to(File, foreign_key="file_id")]
 #[primary_key(book_id)]
 #[table_name = "books"]
 pub struct Book {
@@ -56,3 +57,34 @@ pub struct NewBookType<'a> {
 //     pub file_type_id: &'a i32,
 //     pub file_type_name: &'a str,
 // }
+#[derive(Queryable, Identifiable, Associations)]
+#[primary_key(file_id)]
+#[table_name = "files"]
+pub struct File {
+    pub file_id: String,
+    pub file_type_id: i32,
+    pub file_path: Option<String>,
+    pub file_size: Option<i32>,
+}
+
+#[derive(Insertable)]
+#[table_name="files"]
+pub struct NewFile<'a> {
+    pub file_id: &'a str,
+    pub file_type_id: &'a i32,
+    pub file_path: Option<&'a str>,
+    pub file_size: Option<&'a i32>,
+}
+
+#[derive(Queryable, Identifiable, Associations)]
+#[primary_key(file_type_id)]
+pub struct FileType {
+    pub file_type_id: i32,
+    pub file_type_name: String,
+}
+
+#[derive(Insertable)]
+#[table_name="file_types"]
+pub struct NewFileType<'a> {
+    pub file_type_name: &'a str,
+}
