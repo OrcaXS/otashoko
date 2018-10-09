@@ -43,20 +43,6 @@ pub struct NewBookType<'a> {
     pub book_type_name: &'a str,
 }
 
-// #[derive(Queryable, Identifiable, Associations)]
-// #[belongs_to(Files, foreign_key="file_type_id")]
-// #[primary_key(file_type_id)]
-// pub struct FileType {
-//     pub file_type_id: i32,
-//     pub file_type_name: String,
-// }
-//
-// #[derive(Insertable)]
-// #[table_name="file_types"]
-// pub struct NewFileType<'a> {
-//     pub file_type_id: &'a i32,
-//     pub file_type_name: &'a str,
-// }
 #[derive(Queryable, Identifiable, Associations)]
 #[primary_key(file_id)]
 #[table_name = "files"]

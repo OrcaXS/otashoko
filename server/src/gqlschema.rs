@@ -1,11 +1,6 @@
-use diesel::prelude::*;
-use diesel::r2d2;
-use diesel::r2d2::ConnectionManager;
-use diesel::types::{Nullable, Text};
 use juniper::{FieldResult, RootNode};
-use models::{Book, NewBook as mNewBook, BookType, NewBookType as mNewBookType};
-use chrono::prelude::*;
 use models::{Book, NewBook as mNewBook, BookType, NewBookType as mNewBookType, FileType, NewFileType as mNewFileType, File, NewFile as mNewFile};
+// use chrono::prelude::*;
 use uuid::Uuid;
 
 use super::Database;
