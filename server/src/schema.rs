@@ -47,6 +47,7 @@ table! {
     }
 }
 
+joinable!(book_tag_maps -> books (book_id));
 joinable!(book_tag_maps -> tags (tag_id));
 joinable!(books -> book_types (book_type_id));
 joinable!(files -> file_types (file_type_id));
