@@ -138,10 +138,6 @@ fn main() {
     env_logger::init();
     let sys = actix::System::new("juniper-example");
 
-    // r2d2 pool
-    // let manager = ConnectionManager::<SqliteConnection>::new("db/otashoko.db");
-    // let pool = r2d2::Pool::new(manager).unwrap();
-
     let schema = std::sync::Arc::new(create_schema());
     let addr = SyncArbiter::start(3, move || GraphQLExecutor::new(schema.clone()));
     // let db_addr = SyncArbiter::start(3, move || DbExecutor(pool.clone()));
