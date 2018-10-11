@@ -1,5 +1,6 @@
 table! {
-    book_tag_maps (book_id, tag_id) {
+    book_tags (id) {
+        id -> Integer,
         book_id -> Text,
         tag_id -> Integer,
     }
@@ -43,17 +44,17 @@ table! {
 table! {
     tags (tag_id) {
         tag_id -> Integer,
-        tag_name -> Nullable<Text>,
+        tag_name -> Text,
     }
 }
 
-joinable!(book_tag_maps -> books (book_id));
-joinable!(book_tag_maps -> tags (tag_id));
+joinable!(book_tags -> books (book_id));
+joinable!(book_tags -> tags (tag_id));
 joinable!(books -> book_types (book_type_id));
 joinable!(files -> file_types (file_type_id));
 
 allow_tables_to_appear_in_same_query!(
-    book_tag_maps,
+    book_tags,
     book_types,
     books,
     file_types,
