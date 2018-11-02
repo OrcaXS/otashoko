@@ -12,7 +12,6 @@ use std::path::PathBuf;
 
 // use errors::DataError;
 
-
 type Pool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
 
 lazy_static! {
@@ -38,4 +37,3 @@ fn init_pool(db_path: &str) -> Pool {
     // info!("Database pool initialized.");
     pool
 }
-
