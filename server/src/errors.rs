@@ -28,7 +28,6 @@ use std::io;
 //         }
 //     }
 // }
-
 #[derive(Fail, Debug)]
 pub enum DataError {
     #[fail(display = "SQL Query failed: {}", _0)]
@@ -95,4 +94,3 @@ impl From<String> for DataError {
         DataError::Bail(err)
     }
 }
-
