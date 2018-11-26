@@ -1,8 +1,11 @@
 use juniper::{FieldResult, RootNode};
 use models;
-use models::{Book, BookType, FileType, File, Tag, BookTag};
+use models::{Book, BookTag, BookType, File, Folder, Tag};
 // use chrono::prelude::*;
+use file_parser::{get_folders, FsFolder, add_folder_from_path};
 use uuid::Uuid;
+
+use std::path::{Path, PathBuf};
 
 use super::Database;
 
@@ -11,7 +14,7 @@ use super::Database;
 struct NewBook {
     name: String,
     book_type_id: i32,
-    file_id: String,
+    folder_id: String,
 }
 
 #[derive(GraphQLInputObject)]
@@ -20,7 +23,7 @@ struct UpdateBook {
     book_id: String,
     name: Option<String>,
     book_type_id: Option<i32>,
-    file_id: Option<String>,
+    folder_id: Option<String>,
     book_meta: Option<String>,
 }
 
@@ -40,8 +43,8 @@ struct UpdateBookType {
 #[derive(GraphQLInputObject)]
 #[graphql(description = "A humanoid creature in the Star Wars universe")]
 struct NewFile {
-    file_type_id: i32,
-    file_path: Option<String>,
+    folder_id: String,
+    file_name: String,
     file_size: Option<i32>,
 }
 
@@ -49,9 +52,25 @@ struct NewFile {
 #[graphql(description = "A humanoid creature in the Star Wars universe")]
 struct UpdateFile {
     file_id: String,
-    file_type_id: Option<i32>,
-    file_path: Option<String>,
-    file_size: Option<i32>
+    folder_id: Option<String>,
+    file_name: Option<String>,
+    file_size: Option<i32>,
+}
+
+#[derive(GraphQLInputObject)]
+#[graphql(description = "A humanoid creature in the Star Wars universe")]
+struct NewFolder {
+    folder_id: String,
+    folder_path: String,
+    folder_size: Option<i32>,
+}
+
+#[derive(GraphQLInputObject)]
+#[graphql(description = "A humanoid creature in the Star Wars universe")]
+struct UpdateFolder {
+    folder_id: String,
+    folder_path: Option<String>,
+    folder_size: Option<i32>,
 }
 
 #[derive(GraphQLInputObject)]
@@ -98,9 +117,9 @@ graphql_object!(Book: Database |&self| {
     field last_open_date() -> String {
         self.last_open_date.as_ref().map_or(String::from(""), |d| d.to_string())
     }
-    field file(&executor) -> FieldResult<File> {
-        let file_uuid = Uuid::parse_str(&self.file_id)?;
-        Ok(executor.context().db.get_file(file_uuid)?)
+    field folder(&executor) -> FieldResult<Folder> {
+        let folder_uuid = Uuid::parse_str(&self.folder_id)?;
+        Ok(executor.context().db.get_folder(folder_uuid)?)
     }
     field book_meta() -> &str { self.book_meta.as_ref().map_or("", |i| i.as_str()) }
 });
@@ -112,19 +131,35 @@ graphql_object!(BookType: Database |&self| {
 
 graphql_object!(File: Database |&self| {
     field file_id() -> &str { self.file_id.as_str() }
-    field file_type_id() -> i32 { self.file_type_id }
-    field file_path() -> &str { self.file_path.as_ref().map_or("", |i| i.as_str()) }
+    field folder_id() -> &str { self.folder_id.as_str() }
+    field file_name() -> &str { self.file_name.as_str() }
     field file_size() -> i32 { self.file_size.unwrap_or(0) }
 });
 
-graphql_object!(FileType: Database |&self| {
-    field file_type_id() -> i32 { self.file_type_id }
-    field file_type_name() -> &str { self.file_type_name.as_str() }
+// graphql_object!(FileType: Database |&self| {
+//     field file_type_id() -> i32 { self.file_type_id }
+//     field file_type_name() -> &str { self.file_type_name.as_str() }
+// });
+
+graphql_object!(Folder: Database |&self| {
+    field folder_id() -> &str { self.folder_id.as_str() }
+    field folder_path() -> &str { self.folder_path.as_str() }
+    field folder_size() -> i32 { self.folder_size.unwrap_or(0) }
 });
 
 graphql_object!(Tag: Database |&self| {
     field tag_id() -> i32 { self.tag_id }
     field tag_name() -> &str { self.tag_name.as_str() }
+});
+
+graphql_object!(FsFolder: () |&self| {
+    field folder_name() -> &str {
+        match self.folder_name {
+            Some(ref x) => x.as_str(),
+            None => "",
+        }
+    }
+    field path() -> &str { self.path.to_str().unwrap_or("") }
 });
 
 pub struct QueryRoot;
@@ -161,14 +196,34 @@ graphql_object!(QueryRoot: Database |&self| {
         Ok(context.db.get_files()?)
     }
 
-    field fileTypes(&executor) -> FieldResult<Vec<FileType>> {
+    field folder(&executor, folder_id: String) -> FieldResult<Folder> {
+        let folder_uuid = Uuid::parse_str(&folder_id)?;
         let context = executor.context();
-        Ok(context.db.get_file_types()?)
+        Ok(context.db.get_folder(folder_uuid)?)
     }
+
+    field folderByPath(&executor, folder_path: String) -> FieldResult<Folder> {
+        let context = executor.context();
+        Ok(context.db.get_folder_by_path(folder_path)?)
+    }
+
+    field folderList(&executor) -> FieldResult<Vec<Folder>> {
+        let context = executor.context();
+        Ok(context.db.get_folders()?)
+    }
+
+    // field fileTypes(&executor) -> FieldResult<Vec<FileType>> {
+    //     let context = executor.context();
+    //     Ok(context.db.get_file_types()?)
+    // }
 
     field tagList(&executor) -> FieldResult<Vec<Tag>> {
         let context = executor.context();
         Ok(context.db.get_tags()?)
+    }
+
+    field fsFolderList() -> FieldResult<Vec<FsFolder>> {
+        Ok(get_folders()?)
     }
 });
 
@@ -182,7 +237,7 @@ graphql_object!(MutationRoot: Database |&self| {
             name: &new_book.name,
             add_date: &diesel::dsl::now,
             book_type_id: &new_book.book_type_id,
-            file_id: &new_book.file_id,
+            folder_id: &new_book.folder_id,
         };
         let context = executor.context();
         Ok(context.db.add_book(add_book, book_uuid)?)
@@ -200,21 +255,32 @@ graphql_object!(MutationRoot: Database |&self| {
         let file_uuid = Uuid::new_v4();
         let add_file = models::NewFile {
             file_id: &file_uuid.to_string(),
-            file_type_id: &new_file.file_type_id,
-            file_path: new_file.file_path.as_ref().map(|x| &**x),
+            folder_id: &new_file.folder_id,
+            file_name: &new_file.file_name,
             file_size: new_file.file_size.as_ref(),
         };
         let context = executor.context();
         Ok(context.db.add_file(add_file, file_uuid)?)
     }
 
-    field addFileType(&executor, new_file_type: NewFileType) -> FieldResult<FileType> {
-        let add_file_type = models::NewFileType {
-            file_type_name: &new_file_type.file_type_name,
+    field addFolder(&executor, new_folder: NewFolder) -> FieldResult<Folder> {
+        let folder_uuid = Uuid::new_v4();
+        let add_folder = models::NewFolder {
+            folder_id: &folder_uuid.to_string(),
+            folder_path: &new_folder.folder_path,
+            folder_size: new_folder.folder_size.as_ref(),
         };
         let context = executor.context();
-        Ok(context.db.add_file_type(add_file_type)?)
+        Ok(context.db.add_folder(add_folder, folder_uuid)?)
     }
+
+    // field addFileType(&executor, new_file_type: NewFileType) -> FieldResult<FileType> {
+    //     let add_file_type = models::NewFileType {
+    //         file_type_name: &new_file_type.file_type_name,
+    //     };
+    //     let context = executor.context();
+    //     Ok(context.db.add_file_type(add_file_type)?)
+    // }
 
     field addTag(&executor, new_tag: NewTag) -> FieldResult<Tag> {
         let add_tag = models::NewTag {
@@ -241,10 +307,16 @@ graphql_object!(MutationRoot: Database |&self| {
         Ok(context.db.remove_file(file_uuid)?)
     }
 
-    field removeFileType(&executor, file_type_name: String) -> FieldResult<Vec<FileType>> {
+    field removeFolder(&executor, folder_id: String) -> FieldResult<Vec<Folder>> {
+        let folder_uuid = Uuid::parse_str(&folder_id)?;
         let context = executor.context();
-        Ok(context.db.remove_file_type(file_type_name)?)
+        Ok(context.db.remove_folder(folder_uuid)?)
     }
+
+    // field removeFileType(&executor, file_type_name: String) -> FieldResult<Vec<FileType>> {
+    //     let context = executor.context();
+    //     Ok(context.db.remove_file_type(file_type_name)?)
+    // }
 
     field removeTag(&executor, tag_name: String) -> FieldResult<Vec<Tag>> {
         let context = executor.context();
@@ -265,7 +337,7 @@ graphql_object!(MutationRoot: Database |&self| {
             book_id: &new_book.book_id,
             name: new_book.name.as_ref().map(|x| &**x),
             book_type_id: new_book.book_type_id.as_ref(),
-            file_id: new_book.file_id.as_ref().map(|x| &**x),
+            folder_id: new_book.folder_id.as_ref().map(|x| &**x),
             book_meta: new_book.book_meta.as_ref().map(|x| &**x),
         };
         let context = executor.context();
@@ -281,25 +353,35 @@ graphql_object!(MutationRoot: Database |&self| {
         Ok(context.db.update_book_type(update_book_type)?)
     }
 
+    field updateFolder(&executor, new_folder: UpdateFolder) -> FieldResult<Folder> {
+        let update_folder = models::UpdateFolder {
+            folder_id: &new_folder.folder_id,
+            folder_path: new_folder.folder_path.as_ref().map(|x| &**x),
+            folder_size: new_folder.folder_size.as_ref(),
+        };
+        let context = executor.context();
+        Ok(context.db.update_folder(update_folder)?)
+    }
+
     field updateFile(&executor, new_file: UpdateFile) -> FieldResult<File> {
         let update_file = models::UpdateFile {
             file_id: &new_file.file_id,
-            file_type_id: new_file.file_type_id.as_ref(),
-            file_path: new_file.file_path.as_ref().map(|x| &**x),
+            folder_id: new_file.folder_id.as_ref().map(|x| &**x),
+            file_name: new_file.file_name.as_ref().map(|x| &**x),
             file_size: new_file.file_size.as_ref(),
         };
         let context = executor.context();
         Ok(context.db.update_file(update_file)?)
     }
 
-    field updateFileType(&executor, new_file_type: UpdateFileType) -> FieldResult<FileType> {
-        let update_file_type = models::UpdateFileType {
-            file_type_id: &new_file_type.file_type_id,
-            file_type_name: &new_file_type.file_type_name,
-        };
-        let context = executor.context();
-        Ok(context.db.update_file_type(update_file_type)?)
-    }
+    // field updateFileType(&executor, new_file_type: UpdateFileType) -> FieldResult<FileType> {
+    //     let update_file_type = models::UpdateFileType {
+    //         file_type_id: &new_file_type.file_type_id,
+    //         file_type_name: &new_file_type.file_type_name,
+    //     };
+    //     let context = executor.context();
+    //     Ok(context.db.update_file_type(update_file_type)?)
+    // }
 
     field updateTag(&executor, new_tag: UpdateTag) -> FieldResult<Tag> {
         let update_tag = models::UpdateTag {
@@ -308,6 +390,13 @@ graphql_object!(MutationRoot: Database |&self| {
         };
         let context = executor.context();
         Ok(context.db.update_tag(update_tag)?)
+    }
+
+    field parseFolderPath(&executor, folder_path: String) -> FieldResult<Folder> {
+        // add_folder_from_path(&folder_path)?;
+        // let context = executor.context();
+        // Ok(context.db.get_folder_by_path(folder_path)?)
+        Ok(add_folder_from_path(&folder_path)?)
     }
 });
 

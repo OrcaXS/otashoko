@@ -25,7 +25,6 @@ extern crate diesel;
 extern crate failure;
 // #[macro_use]
 // extern crate failure_derive;
-use std::sync::Arc;
 use actix::prelude::*;
 use actix_web::{
     http, middleware, server, App, AsyncResponder, Error, FutureResponse, HttpRequest,
@@ -34,6 +33,7 @@ use actix_web::{
 use futures::future::Future;
 use juniper::http::graphiql::graphiql_source;
 use juniper::http::GraphQLRequest;
+use std::sync::Arc;
 // use r2d2_sqlite::SqliteConnectionManager;
 
 // use diesel::sqlite::SqliteConnection;
@@ -42,8 +42,8 @@ use juniper::http::GraphQLRequest;
 // mod db;
 // use db::{CreateUser, DbExecutor};
 
-mod schema;
 mod gqlschema;
+mod schema;
 
 use gqlschema::create_schema;
 use gqlschema::Schema;
@@ -56,6 +56,8 @@ use dbqueries::Db;
 mod models;
 
 mod errors;
+
+mod file_parser;
 
 struct AppState {
     executor: Addr<GraphQLExecutor>,
@@ -75,7 +77,9 @@ pub struct GraphQLExecutor {
 
 impl GraphQLExecutor {
     fn new(gqlschema: std::sync::Arc<Schema>) -> GraphQLExecutor {
-        GraphQLExecutor { gqlschema: gqlschema }
+        GraphQLExecutor {
+            gqlschema: gqlschema,
+        }
     }
 }
 
@@ -94,7 +98,6 @@ impl Handler<GraphQLData> for GraphQLExecutor {
     type Result = Result<String, Error>;
 
     fn handle(&mut self, msg: GraphQLData, _: &mut Self::Context) -> Self::Result {
-
         let ctx = Database {
             db: Arc::new(Db::new()),
         };
@@ -111,9 +114,7 @@ fn graphiql(_req: &HttpRequest<AppState>) -> Result<HttpResponse, Error> {
         .body(html))
 }
 
-fn graphql(
-    (st, data): (State<AppState>, Json<GraphQLData>),
-) -> FutureResponse<HttpResponse> {
+fn graphql((st, data): (State<AppState>, Json<GraphQLData>)) -> FutureResponse<HttpResponse> {
     st.executor
         .send(data.0)
         .from_err()
@@ -132,7 +133,6 @@ fn graphql(
 //     }
 // }
 
-
 fn main() {
     ::std::env::set_var("RUST_LOG", "actix_web=info");
     env_logger::init();
@@ -144,15 +144,19 @@ fn main() {
 
     // Start http server
     server::new(move || {
-        App::with_state(AppState{executor: addr.clone()})
-            // enable logger
-            .middleware(middleware::Logger::default())
-            .resource("/graphql", |r| r.method(http::Method::POST).with(graphql))
-            .resource("/graphiql", |r| r.method(http::Method::GET).h(graphiql))
-    }).bind("127.0.0.1:3080")
-        .unwrap()
-        .start();
+        App::with_state(AppState {
+            executor: addr.clone(),
+        })
+        // enable logger
+        .middleware(middleware::Logger::default())
+        .resource("/graphql", |r| r.method(http::Method::POST).with(graphql))
+        .resource("/graphiql", |r| r.method(http::Method::GET).h(graphiql))
+    })
+    .bind("127.0.0.1:3080")
+    .unwrap()
+    .start();
 
     println!("Started http server: 127.0.0.1:3080");
+    // file_parser::print_files();
     let _ = sys.run();
 }
