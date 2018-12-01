@@ -195,10 +195,16 @@ impl Db {
     }
 
     pub fn add_book(&self, new_book: NewBook, book_uuid: Uuid) -> Result<Book, DataError> {
-        // use schema::books::dsl::*;
+        use schema::folders::dsl::*;
         let db = &self.pool;
         let conn = db.get()?;
 
+        // Dirty way to validate folderId before actually adding a Book
+        match diesel::select(diesel::dsl::exists(folders.filter(folder_id.eq(new_book.folder_id))))
+        .get_result(&conn) {
+            Ok(exists) => match exists { true => (), false => return Err(DataError::Bail(String::from("folderId not exists.")))},
+            Err(e) => return Err(DataError::DieselResultError(e)),
+        };
         let rows = diesel::insert_into(schema::books::table)
             .values(&new_book)
             .execute(&conn)?;
