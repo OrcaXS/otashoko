@@ -103,7 +103,7 @@ pub fn add_folder_from_path(folder_path: &str) -> Result<Folder, DataError> {
         let size = path.metadata()?.len() as i32;
         let path_str = match path.to_str() {
             Some(path_str) => path_str,
-            None => return Err(DataError::Bail(String::from("Path cannot be converted to string"))),
+            None => return Err(DataError::Bail(String::from("Path cannot be converted to string."))),
         };
         let new_folder = NewFolder {
             folder_id: &folder_uuid.to_string(),

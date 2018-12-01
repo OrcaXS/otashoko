@@ -19,7 +19,7 @@ fn validate_rows(rows: usize, affected: usize) -> Result<usize, DataError> {
     if rows == affected {
         return Ok(rows);
     }
-    Err(DataError::Bail(String::from("affected rows mismatched")))
+    Err(DataError::Bail(String::from("Affected rows mismatched.")))
 }
 
 pub struct Db {
