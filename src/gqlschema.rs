@@ -166,7 +166,7 @@ pub struct QueryRoot;
 
 graphql_object!(QueryRoot: Database |&self| {
     field apiVersion() -> &str {
-        "1.0"
+        "0.1"
     }
 
     field bookList(&executor) -> FieldResult<Vec<Book>> {
