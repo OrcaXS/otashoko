@@ -159,7 +159,7 @@ graphql_object!(FsFolder: () |&self| {
             None => "",
         }
     }
-    field path() -> &str { self.path.to_str().unwrap_or("") }
+    field folder_path() -> &str { self.folder_path.to_str().unwrap_or("") }
 });
 
 pub struct QueryRoot;
@@ -207,7 +207,7 @@ graphql_object!(QueryRoot: Database |&self| {
         Ok(context.db.get_folder_by_path(folder_path)?)
     }
 
-    field folderList(&executor) -> FieldResult<Vec<Folder>> {
+    field dbFolderList(&executor) -> FieldResult<Vec<Folder>> {
         let context = executor.context();
         Ok(context.db.get_folders()?)
     }

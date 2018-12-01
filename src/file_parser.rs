@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 pub struct FsFolder {
     pub folder_name: Option<String>,
-    pub path: PathBuf,
+    pub folder_path: PathBuf,
 }
 
 pub struct OwnedNewFile {
@@ -126,7 +126,7 @@ pub fn get_folders() -> Result<Vec<FsFolder>, DataError> {
                                 .filter(|entry| entry.path().to_str().is_some())
                                 .map(|entry| FsFolder {
                                     folder_name: entry.path().file_stem().map(|x| x.to_str().unwrap_or("No folder name").to_owned()),
-                                    path: entry.path().to_owned(),
+                                    folder_path: entry.path().to_owned(),
                                 })
                                 .collect();
     Ok(folders)
