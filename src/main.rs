@@ -27,7 +27,7 @@ extern crate failure;
 // extern crate failure_derive;
 use actix::prelude::*;
 use actix_web::{
-    http, middleware, server, App, AsyncResponder, Error, FutureResponse, HttpRequest,
+    http, middleware, middleware::cors::Cors, server, App, AsyncResponder, Error, FutureResponse, HttpRequest,
     HttpResponse, Json, State,
 };
 use futures::future::Future;
@@ -149,10 +149,19 @@ fn main() {
         })
         // enable logger
         .middleware(middleware::Logger::default())
-        .resource("/graphql", |r| r.method(http::Method::POST).with(graphql))
-        .resource("/graphiql", |r| r.method(http::Method::GET).h(graphiql))
+        .configure(|app| {
+                Cors::for_app(app)
+                    .allowed_origin("http://localhost:8080")
+                    .allowed_methods(vec!["GET", "POST", "OPTIONS"])
+                    .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])
+                    .allowed_header(http::header::CONTENT_TYPE)
+                    .max_age(3600)
+                    .resource("/graphql", |r| r.method(http::Method::POST).with(graphql))
+                    .resource("/graphiql", |r| r.method(http::Method::GET).h(graphiql))
+                    .register()
+        })
     })
-    .bind("127.0.0.1:3080")
+    .bind("localhost:3080")
     .unwrap()
     .start();
 
