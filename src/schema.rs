@@ -59,8 +59,15 @@ table! {
 joinable!(book_tags -> books (book_id));
 joinable!(book_tags -> tags (tag_id));
 joinable!(books -> book_types (book_type_id));
+joinable!(books -> folders (folder_id));
 joinable!(files -> folders (folder_id));
 
 allow_tables_to_appear_in_same_query!(
-    book_tags, book_types, books, file_types, files, folders, tags,
+    book_tags,
+    book_types,
+    books,
+    file_types,
+    files,
+    folders,
+    tags,
 );
