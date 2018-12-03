@@ -11,6 +11,14 @@ use super::Database;
 
 #[derive(GraphQLInputObject)]
 #[graphql(description = "A humanoid creature in the Star Wars universe")]
+struct NewBookAndFolder {
+    name: String,
+    book_type_id: i32,
+    folder_path: String,
+}
+
+#[derive(GraphQLInputObject)]
+#[graphql(description = "A humanoid creature in the Star Wars universe")]
 struct NewBook {
     name: String,
     book_type_id: i32,
@@ -241,6 +249,27 @@ graphql_object!(MutationRoot: Database |&self| {
         };
         let context = executor.context();
         Ok(context.db.add_book(add_book, book_uuid)?)
+    }
+
+    field addBookWithFolder(&executor, new_book_folder: NewBookAndFolder) -> FieldResult<Book> {
+        let context = executor.context();
+        let folder_uuid = Uuid::new_v4();
+        let new_folder = models::NewFolder {
+            folder_id: &folder_uuid.to_string(),
+            folder_path: &new_book_folder.folder_path,
+            folder_size: Some(&0),
+        };
+        let folder = context.db.add_folder(new_folder, folder_uuid)?;
+
+        let book_uuid = Uuid::new_v4();
+        let new_book = models::NewBook {
+            book_id: &book_uuid.to_string(),
+            name: &new_book_folder.name,
+            add_date: &diesel::dsl::now,
+            book_type_id: &new_book_folder.book_type_id,
+            folder_id: &folder.folder_id,
+        };
+        Ok(context.db.add_book(new_book, book_uuid)?)
     }
 
     field addBookType(&executor, new_book_type: NewBookType) -> FieldResult<BookType> {
