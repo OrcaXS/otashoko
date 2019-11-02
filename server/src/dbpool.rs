@@ -1,21 +1,17 @@
-// use rusqlite::Connection;
+use rusqlite::Connection;
 
-// use r2d2_sqlite::SqliteConnectionManager;
-// use r2d2;
-
-use diesel::prelude::*;
-use diesel::r2d2;
-use diesel::r2d2::ConnectionManager;
+use r2d2_sqlite::SqliteConnectionManager;
+use r2d2;
 
 use std::io;
 use std::path::PathBuf;
 
 // use errors::DataError;
 
-type Pool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
+type Pool = r2d2::Pool<SqliteConnectionManager>;
 
 lazy_static! {
-    static ref POOL: Pool = init_pool("db/otashoko.db");
+    static ref POOL: Pool = init_pool("db/otashoko.sqlite");
 }
 
 /// Get an r2d2 `SqliteConnection`.
@@ -24,7 +20,7 @@ pub fn connection() -> Pool {
 }
 
 fn init_pool(db_path: &str) -> Pool {
-    let manager = ConnectionManager::<SqliteConnection>::new(db_path);
+    let manager = SqliteConnectionManager::file(db_path);
     let pool = r2d2::Pool::builder()
         .max_size(1)
         .build(manager)
@@ -34,6 +30,6 @@ fn init_pool(db_path: &str) -> Pool {
         let _db = pool.get().expect("Failed to initialize pool.");
         // run_migration_on(&*db).expect("Failed to run migrations during init.");
     }
-    // info!("Database pool initialized.");
+    info!("Database pool initialized.");
     pool
 }

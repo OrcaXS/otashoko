@@ -1,12 +1,5 @@
-// use chrono::prelude::*;
-use diesel::prelude::*;
+use chrono::prelude::*;
 
-use diesel::r2d2;
-// use diesel::dsl::exists;
-// use diesel::query_builder::AsQuery;
-// use diesel::select;
-
-use errors::DataError;
 use dbpool::connection;
 use models::*;
 use schema;
@@ -19,24 +12,6 @@ fn validate_rows(rows: usize, affected: usize) -> Result<usize, DataError> {
     Err(DataError::Bail(String::from("affected rows mismatched")))
 }
 
-pub struct Db {
-    pool: Pool,
-}
-
-impl Db {
-    pub fn new() -> Db {
-        let pool = connection();
-        Db { pool }
-    }
-
-    pub fn get_book(&self, id: Uuid) -> Result<Book, DataError> {
-        let db = &self.pool;
-        let conn = db.get()?;
-        let result = schema::books::table
-            .find(id.to_string())
-            .first::<Book>(&conn)?;
-        Ok(result)
-    }
 
     pub fn get_books(&self) -> Result<Vec<Book>, DataError> {
         use schema::books::dsl::*;
@@ -392,20 +367,3 @@ impl Db {
         let result = update_tag.save_changes::<Tag>(&conn)?;
         Ok(result)
     }
-
-    // pub fn add_book_tag_bystr(&self, new_file: NewFile, file_uuid: Uuid) -> Result<File, DataError> {
-    //     // use schema::books::dsl::*;
-    //     let db = &self.pool;
-    //     let conn = db.get()?;
-    //
-    //     let rows =  diesel::insert_into(schema::files::table)
-    //         .values(&new_file)
-    //         .execute(&conn)?;
-    //     validate_rows(rows, 1)?;
-    //     let result = schema::files::table
-    //         .find(file_uuid.to_string())
-    //         .first::<File>(&conn)?;
-    //     Ok(result)
-    // }
-
-}

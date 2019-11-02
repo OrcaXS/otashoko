@@ -1,1 +1,0 @@
-DROP TABLE IF EXISTS book_tag_maps;
